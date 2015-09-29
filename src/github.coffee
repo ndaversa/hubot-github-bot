@@ -10,12 +10,12 @@
 #   HUBOT_GITHUB_REPOS_MAP (format: "{\"web\":\"frontend\",\"android\":\"android\",\"ios\":\"ios\",\"platform\":\"web\"}"
 #
 # Commands:
+#   hubot github open - Shows a list of open pull requests for the repo of this room
 #   hubot github notification hh:mm - I'll remind about open pull requests in this room at hh:mm every weekday.
 #   hubot github list notifications - See all pull request notifications for this room.
 #   hubot github notifications in every room - Be nosey and see when other rooms have their notifications set
 #   hubot github delete hh:mm notification - If you have a notification at hh:mm, I'll delete it.
 #   hubot github delete all notifications - Deletes all notifications for this room.
-#   hubot github open - Shows a list of open pull requests for the repo of this room
 #
 # Author:
 #   ndaversa
@@ -162,6 +162,7 @@ module.exports = (robot) ->
       I can remind you about open pull requests for the repo that belongs to this channel
       Use me to create a notification, and then I'll post in this room every weekday at the time you specify. Here's how:
 
+      #{robot.name} github open - Shows a list of open pull requests for the repo of this room
       #{robot.name} github notification hh:mm - I'll remind about open pull requests in this room at hh:mm every weekday.
       #{robot.name} github list notifications - See all pull request notifications for this room.
       #{robot.name} github notifications in every room - Be nosey and see when other rooms have their notifications set
