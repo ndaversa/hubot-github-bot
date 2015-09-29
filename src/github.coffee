@@ -2,7 +2,11 @@
 #  List and schedule reminders about open pull requests on github
 #
 # Dependencies:
-#   None
+#  - coffeescript
+#  - cron
+#  - octokat
+#  - moment
+#  - underscore
 #
 # Configuration:
 #   HUBOT_GITHUB_TOKEN - Github Application Token
