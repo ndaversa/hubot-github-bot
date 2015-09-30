@@ -128,6 +128,9 @@ module.exports = (robot) ->
               \n
             """
       finally
+        if message.length is 0
+          message = "No matching pull requests found"
+
         robot.messageRoom room, message
 
   # Run a cron job that runs every minute, Monday-Friday
@@ -170,7 +173,7 @@ module.exports = (robot) ->
         Here's the notifications for every room: #{_.map(notifications, (notification) -> "\nRoom: #{notification.room}, Time: #{notification.time}")}
       """
 
-   robot.respond /(?:github|gh|git) iam (.*)$/, (msg) ->
+   robot.respond /(?:github|gh|git) iam (?:@?)(.*)$/, (msg) ->
      [__, githubUsername] = msg.match
      users = getGithubUsers()
      users[msg.message.user.id] = githubUsername
@@ -191,7 +194,7 @@ module.exports = (robot) ->
       #{robot.name} github delete all notifications - Deletes all notifications for this room.
     """
 
-  robot.respond /(?:github|gh|git) (?:prs|open)(?:\s+(?:for|by)\s+(.*))?/i, (msg) ->
+  robot.respond /(?:github|gh|git) (?:prs|open)(?:\s+(?:for|by)\s+(?:@?)(.*))?/i, (msg) ->
     [__, who] = msg.match
 
     if who is 'me'
