@@ -15,6 +15,7 @@
 #
 # Commands:
 #   hubot github iam <username> - Let hubot know what your github username is
+#   hubot github users - List the github users hubot knows about
 #   hubot github open [for <user>] - Shows a list of open pull requests for the repo of this room [optionally for a specific user]
 #   hubot github notification hh:mm - I'll remind about open pull requests in this room at hh:mm every weekday.
 #   hubot github list notifications - See all pull request notifications for this room.
@@ -180,12 +181,24 @@ module.exports = (robot) ->
      saveGithubUsers users
      msg.reply "Thanks, I'll remember that <@#{msg.message.user.id}> is `#{githubUsername}` on github"
 
+   robot.respond /(?:github|gh|git) (?:list|show|users)(?:\s+users)?$/, (msg) ->
+     users = getGithubUsers()
+     message = ""
+     for user of users
+       message += "\n<@#{user}> is `#{users[user]}` on github"
+
+     if message.length is 0
+       message = "I don't have any github users yet"
+
+     msg.reply message
+
   robot.respond /(github|gh|git) help/i, (msg) ->
     msg.send """
       I can remind you about open pull requests for the repo that belongs to this channel
       Use me to create a notification, and then I'll post in this room every weekday at the time you specify. Here's how:
 
       #{robot.name} github iam <username> - Let hubot know what your github username is
+      #{robot.name} github users - List the github users hubot knows about
       #{robot.name} github open [for <user>] - Shows a list of open pull requests for the repo of this room [optionally for a specific user]
       #{robot.name} github notification hh:mm - I'll remind about open pull requests in this room at hh:mm every weekday.
       #{robot.name} github list notifications - See all pull request notifications for this room.
