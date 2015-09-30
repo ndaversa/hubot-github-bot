@@ -177,15 +177,25 @@ module.exports = (robot) ->
    robot.respond /(?:github|gh|git) iam (?:@?)(.*)$/, (msg) ->
      [__, githubUsername] = msg.match
      users = getGithubUsers()
-     users[msg.message.user.id] = githubUsername
+     user = (users.filter (user) -> user.id is msg.message.user.id)[0]
+
+     if not user
+       user =
+         id: msg.message.user.id
+         github: githubUsername
+       users.push user
+     else
+       user.id = msg.message.user.id
+       user.github = githubUsername
+
      saveGithubUsers users
-     msg.reply "Thanks, I'll remember that <@#{msg.message.user.id}> is `#{githubUsername}` on github"
+     msg.reply "Thanks, I'll remember that <@#{user.id}> is `#{user.github}` on github"
 
    robot.respond /(?:github|gh|git) (?:list|show|users)(?:\s+users)?$/, (msg) ->
      users = getGithubUsers()
      message = ""
-     for user of users
-       message += "\n<@#{user}> is `#{users[user]}` on github"
+     for user in users
+       message += "\n<@#{user.id}> is `#{user.github}` on github"
 
      if message.length is 0
        message = "I don't have any github users yet"
@@ -214,13 +224,14 @@ module.exports = (robot) ->
       who = msg.message.user?.name?.toLowerCase()
 
     if who?
-      user = robot.brain.userForName who
-      githubUsers = getGithubUsers()
-      githubUser = githubUsers[user.id]
+      who = robot.brain.userForName who
+      githubUser = (getGithubUsers().filter (user) -> user.id is who.id)[0]?.github
+
       if not githubUser
         msg.reply """
-          I don't know <@#{user.id}>'s github username
-          Please have <@#{user.id}> tell me by saying `#{robot.name} github iam <username>`
+          I don't know <@#{who.id}>'s github username
+          Please have <@#{who.id}> tell me by saying `#{robot.name} github iam <username>`
         """
         return
+
     listOpenPullRequestsForRoom msg.message.room, githubUser
