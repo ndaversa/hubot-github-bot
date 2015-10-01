@@ -1,7 +1,7 @@
 {
   "name": "hubot-github-bot",
   "description": "A hubot script to list and remind you about open pull requests",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "authors": [
     "Nino D'Aversa <nino@ndaversa.com>"
   ],
