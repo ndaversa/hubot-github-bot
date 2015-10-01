@@ -51,6 +51,16 @@ module.exports = (robot) ->
   saveNotifications = (notifications) ->
     robot.brain.set 'github-notifications', notifications
 
+  lookupUserWithGithub = (github) ->
+    users = getGithubUsers()
+    result = (user for user in users when user.github is github.login) if github
+    if result?.length is 1
+      return "<@#{result[0].id}>"
+    else if github
+      return github.login
+    else
+      return "Unassigned"
+
   notificationShouldFire = (notification) ->
     now = new Date
     currentHours = now.getHours()
@@ -117,22 +127,20 @@ module.exports = (robot) ->
           return repo.pulls(pr.number).fetch()
         return
     .then ( prs ) ->
-      try
-        message = ""
-        for pr in prs when pr
-            message+= """
-              *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
-              #{pr.htmlUrl}
-              Updated: *#{moment(pr.updatedAt).fromNow()}*
-              Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
-              Assignee: #{ if pr.assignee? then "<@#{pr.assignee.login}>" else "Unassigned" }
-              \n
-            """
-      finally
-        if message.length is 0
-          message = "No matching pull requests found"
+      message = ""
+      for pr in prs when pr
+          message+= """
+            *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
+            #{pr.htmlUrl}
+            Updated: *#{moment(pr.updatedAt).fromNow()}*
+            Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
+            Assignee: #{lookupUserWithGithub pr.assignee}
+            \n
+          """
+      if message.length is 0
+        message = "No matching pull requests found"
 
-        robot.messageRoom room, message
+      robot.messageRoom room, message
 
   # Run a cron job that runs every minute, Monday-Friday
   new cronJob('1 * * * * 1-5', checkNotifications, null, true)
