@@ -7,12 +7,12 @@ A hubot script to list and remind you about open pull requests
 - cron
 - octokat
 - moment
-- underscore 
+- underscore
 
 ###Configuration
 - `HUBOT_GITHUB_TOKEN` - Github Application Token
 - `HUBOT_GITHUB_ORG` - Github Organization Name (the one in the url)
--   `HUBOT_GITHUB_REPOS_MAP` eg.`"{\"web\":\"frontend\",\"android\":\"android\",\"ios\":\"ios\",\"platform\":\"web\"}"`   
+- `HUBOT_GITHUB_REPOS_MAP` eg.`"{\"web\":\"frontend\",\"android\":\"android\",\"ios\":\"ios\",\"platform\":\"web\"}"`
 
 ###Commands
 - hubot github open - Shows a list of open pull requests for the repo of this room
