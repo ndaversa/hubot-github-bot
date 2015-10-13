@@ -142,9 +142,6 @@ module.exports = (robot) ->
 
       robot.messageRoom room, message
 
-  # Run a cron job that runs every minute, Monday-Friday
-  new cronJob('1 * * * * 1-5', checkNotifications, null, true)
-
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
     msg.send """
@@ -243,3 +240,7 @@ module.exports = (robot) ->
         return
 
     listOpenPullRequestsForRoom msg.message.room, githubUser
+
+  robot.brain.once 'loaded', ->
+    # Run a cron job that runs every minute, Monday-Friday
+    new cronJob('0 * * * * 1-5', checkNotifications, null, true)
