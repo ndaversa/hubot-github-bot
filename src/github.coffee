@@ -28,6 +28,8 @@
 
 token = process.env.HUBOT_GITHUB_TOKEN
 githubOrg = process.env.HUBOT_GITHUB_ORG
+if not process.env.HUBOT_GITHUB_REPOS_MAP
+  throw new Error('Please specify a room:repo mapping in HUBOT_GITHUB_REPOS_MAP - e.g.: {"devops-room": "devops-script-repo"}')
 repos = JSON.parse process.env.HUBOT_GITHUB_REPOS_MAP
 debug = process.env.HUBOT_GITHUB_DEBUG
 
