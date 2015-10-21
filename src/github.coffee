@@ -26,6 +26,8 @@
 # Author:
 #   ndaversa
 
+unless (github_url = process.env.HUBOT_GITHUB_URL)?
+  github_url = "https://github.com"
 token = process.env.HUBOT_GITHUB_TOKEN
 githubOrg = process.env.HUBOT_GITHUB_ORG
 repos = JSON.parse process.env.HUBOT_GITHUB_REPOS_MAP
@@ -35,7 +37,11 @@ _ = require 'underscore'
 moment = require 'moment'
 cronJob = require("cron").CronJob
 Octokat = require('octokat')
-octo = new Octokat token: token
+rootURL = github_url + "/api/v3"
+octo = new Octokat({
+  token: token
+  rootURL: rootURL
+})
 
 module.exports = (robot) ->
 
