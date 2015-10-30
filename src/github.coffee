@@ -168,7 +168,7 @@ module.exports = (robot) ->
     if notifications.length is 0
       msg.send "Well this is awkward. You haven't got any github notifications set :-/"
     else
-      msg.send "You have pull request notifcations at the following times: #{_.map(notifications, (notification) -> notification.time)}"
+      msg.send "You have pull request notifications at the following times: #{_.map(notifications, (notification) -> notification.time)}"
 
   robot.respond /(?:github|gh|git) notifications in every room/i, (msg) ->
     notifications = getNotifications()
