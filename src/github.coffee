@@ -7,6 +7,7 @@
 #  - octokat
 #  - moment
 #  - underscore
+#  - fuse.js
 #
 # Configuration:
 #   HUBOT_GITHUB_TOKEN - Github Application Token
@@ -14,8 +15,6 @@
 #   HUBOT_GITHUB_REPOS_MAP (format: "{\"web\":\"frontend\",\"android\":\"android\",\"ios\":\"ios\",\"platform\":\"web\"}"
 #
 # Commands:
-#   hubot github iam <username> - Let hubot know what your github username is
-#   hubot github users - List the github users hubot knows about
 #   hubot github open [for <user>] - Shows a list of open pull requests for the repo of this room [optionally for a specific user]
 #   hubot github notification hh:mm - I'll remind about open pull requests in this room at hh:mm every weekday.
 #   hubot github list notifications - See all pull request notifications for this room.
@@ -36,14 +35,9 @@ moment = require 'moment'
 cronJob = require("cron").CronJob
 Octokat = require('octokat')
 octo = new Octokat token: token
+Fuse = require 'fuse.js'
 
 module.exports = (robot) ->
-
-  getGithubUsers = ->
-    robot.brain.get('github-users') or []
-
-  saveGithubUsers = (users) ->
-    robot.brain.set 'github-users', users
 
   getNotifications = ->
     robot.brain.get('github-notifications') or []
@@ -52,12 +46,24 @@ module.exports = (robot) ->
     robot.brain.set 'github-notifications', notifications
 
   lookupUserWithGithub = (github) ->
-    users = getGithubUsers()
-    result = (user for user in users when user.github is github.login) if github
-    if result?.length is 1
-      return "<@#{result[0].id}>"
-    else if github
-      return github.login
+    if github
+      users = robot.brain.users()
+      users = _(users).keys().map (id) ->
+        u = users[id]
+        id: u.id
+        real_name: u.real_name
+
+      f = new Fuse users,
+        keys: ['real_name']
+        shouldSort: yes
+        verbose: no
+      results = f.search github.login
+      result = if results? and results.length >=1 then results[0] else null
+
+      if result
+        return "<@#{result.id}>"
+      else
+        return github.login
     else
       return "Unassigned"
 
@@ -133,7 +139,8 @@ module.exports = (robot) ->
             *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
             #{pr.htmlUrl}
             Updated: *#{moment(pr.updatedAt).fromNow()}*
-            Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
+            Status: #{if pr.mergeable then "Mergeable" else "Unresolved Conflicts"}
+            Author: #{lookupUserWithGithub pr.user}
             Assignee: #{lookupUserWithGithub pr.assignee}
             \n
           """
@@ -141,6 +148,8 @@ module.exports = (robot) ->
         message = "No matching pull requests found"
 
       robot.messageRoom room, message
+    .catch ( error ) ->
+      console.log "Error: #{error}"
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
@@ -179,41 +188,11 @@ module.exports = (robot) ->
         Here's the notifications for every room: #{_.map(notifications, (notification) -> "\nRoom: #{notification.room}, Time: #{notification.time}")}
       """
 
-   robot.respond /(?:github|gh|git) iam (?:@?)(.*)$/, (msg) ->
-     [__, githubUsername] = msg.match
-     users = getGithubUsers()
-     user = (users.filter (user) -> user.id is msg.message.user.id)[0]
-
-     if not user
-       user =
-         id: msg.message.user.id
-         github: githubUsername
-       users.push user
-     else
-       user.id = msg.message.user.id
-       user.github = githubUsername
-
-     saveGithubUsers users
-     msg.reply "Thanks, I'll remember that <@#{user.id}> is `#{user.github}` on github"
-
-   robot.respond /(?:github|gh|git) (?:list|show|users)(?:\s+users)?$/, (msg) ->
-     users = getGithubUsers()
-     message = ""
-     for user in users
-       message += "\n<@#{user.id}> is `#{user.github}` on github"
-
-     if message.length is 0
-       message = "I don't have any github users yet"
-
-     msg.reply message
-
   robot.respond /(github|gh|git) help/i, (msg) ->
     msg.send """
       I can remind you about open pull requests for the repo that belongs to this channel
       Use me to create a notification, and then I'll post in this room every weekday at the time you specify. Here's how:
 
-      #{robot.name} github iam <username> - Let hubot know what your github username is
-      #{robot.name} github users - List the github users hubot knows about
       #{robot.name} github open [for <user>] - Shows a list of open pull requests for the repo of this room [optionally for a specific user]
       #{robot.name} github notification hh:mm - I'll remind about open pull requests in this room at hh:mm every weekday.
       #{robot.name} github list notifications - See all pull request notifications for this room.
@@ -230,16 +209,7 @@ module.exports = (robot) ->
 
     if who?
       who = robot.brain.userForName who
-      githubUser = (getGithubUsers().filter (user) -> user.id is who.id)[0]?.github
-
-      if not githubUser
-        msg.reply """
-          I don't know <@#{who.id}>'s github username
-          Please have <@#{who.id}> tell me by saying `#{robot.name} github iam <username>`
-        """
-        return
-
-    listOpenPullRequestsForRoom msg.message.room, githubUser
+      listOpenPullRequestsForRoom msg.message.room, who.name
 
   robot.brain.once 'loaded', ->
     # Run a cron job that runs every minute, Monday-Friday

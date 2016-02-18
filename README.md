@@ -8,6 +8,7 @@ A hubot script to list and remind you about open pull requests
 - octokat
 - moment
 - underscore
+- fuse.js
 
 ###Configuration
 - `HUBOT_GITHUB_TOKEN` - Github Application Token
