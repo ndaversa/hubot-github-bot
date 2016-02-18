@@ -51,6 +51,7 @@ module.exports = (robot) ->
       users = _(users).keys().map (id) ->
         u = users[id]
         id: u.id
+        name: u.name
         real_name: u.real_name
 
       f = new Fuse users,
@@ -59,13 +60,8 @@ module.exports = (robot) ->
         verbose: no
       results = f.search github.login
       result = if results? and results.length >=1 then results[0] else null
-
-      if result
-        return "<@#{result.id}>"
-      else
-        return github.login
-    else
-      return "Unassigned"
+      return result if result
+    return null
 
   notificationShouldFire = (notification) ->
     now = new Date
@@ -129,21 +125,26 @@ module.exports = (robot) ->
     repo = octo.repos(githubOrg, repo)
     repo.pulls.fetch(state: "open").then (prs) ->
       return Promise.all prs.map (pr) ->
-        if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
-          return repo.pulls(pr.number).fetch()
-        return
+        if user?
+          return if not pr.assignee?
+          assignee = lookupUserWithGithub pr.assignee
+          return if user.toLowerCase() isnt assignee.name.toLowerCase()
+
+        return repo.pulls(pr.number).fetch()
     .then ( prs ) ->
       message = ""
       for pr in prs when pr
-          message+= """
-            *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
-            #{pr.htmlUrl}
-            Updated: *#{moment(pr.updatedAt).fromNow()}*
-            Status: #{if pr.mergeable then "Mergeable" else "Unresolved Conflicts"}
-            Author: #{lookupUserWithGithub pr.user}
-            Assignee: #{lookupUserWithGithub pr.assignee}
-            \n
-          """
+        author = lookupUserWithGithub pr.user
+        assignee = lookupUserWithGithub pr.assignee
+        message+= """
+          *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
+          #{pr.htmlUrl}
+          Updated: *#{moment(pr.updatedAt).fromNow()}*
+          Status: #{if pr.mergeable then "Mergeable" else "Unresolved Conflicts"}
+          Author: #{if author then "<@#{author.id}>" else "Unknown"}
+          Assignee: #{if assignee then "<@#{assignee.id}>" else "Unassigned"}
+          \n
+        """
       if message.length is 0
         message = "No matching pull requests found"
 
@@ -209,7 +210,9 @@ module.exports = (robot) ->
 
     if who?
       who = robot.brain.userForName who
-      listOpenPullRequestsForRoom msg.message.room, who.name
+      who = who.name
+
+    listOpenPullRequestsForRoom msg.message.room, who
 
   robot.brain.once 'loaded', ->
     # Run a cron job that runs every minute, Monday-Friday
