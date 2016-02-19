@@ -46,7 +46,10 @@ module.exports = (robot) ->
     robot.brain.set 'github-notifications', notifications
 
   lookupUserWithGithub = (github) ->
-    if github
+    return if not github
+
+    github.fetch().then (user) ->
+      name = user.name or github.login
       users = robot.brain.users()
       users = _(users).keys().map (id) ->
         u = users[id]
@@ -58,10 +61,10 @@ module.exports = (robot) ->
         keys: ['real_name']
         shouldSort: yes
         verbose: no
-      results = f.search github.login
-      result = if results? and results.length >=1 then results[0] else null
-      return result if result
-    return null
+
+      results = f.search name
+      result = if results? and results.length >=1 then results[0] else undefined
+      return result
 
   notificationShouldFire = (notification) ->
     now = new Date
@@ -123,19 +126,28 @@ module.exports = (robot) ->
       return
 
     repo = octo.repos(githubOrg, repo)
-    repo.pulls.fetch(state: "open").then (prs) ->
+    repo.pulls.fetch(state: "open")
+    .then (prs) ->
       return Promise.all prs.map (pr) ->
         if user?
           return if not pr.assignee?
-          assignee = lookupUserWithGithub pr.assignee
-          return if user.toLowerCase() isnt assignee.name.toLowerCase()
-
-        return repo.pulls(pr.number).fetch()
-    .then ( prs ) ->
-      message = ""
-      for pr in prs when pr
+          return lookupUserWithGithub(pr.assignee).then (assignee) ->
+            return if user.toLowerCase() isnt assignee?.name.toLowerCase()
+            return repo.pulls(pr.number).fetch()
+        else
+          return repo.pulls(pr.number).fetch()
+    .then (prs) ->
+      return Promise.all prs.map (pr) ->
+        return if not pr
         author = lookupUserWithGithub pr.user
         assignee = lookupUserWithGithub pr.assignee
+        return Promise.all [ pr, author, assignee ]
+    .then (prs) ->
+      message = ""
+      for p in prs when p
+        pr = p[0]
+        author = p[1]
+        assignee = p[2]
         message+= """
           *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
           #{pr.htmlUrl}
@@ -150,7 +162,7 @@ module.exports = (robot) ->
 
       robot.messageRoom room, message
     .catch ( error ) ->
-      console.log "Error: #{error}"
+      console.log error.stack
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
