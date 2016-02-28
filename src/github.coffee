@@ -39,6 +39,11 @@ Fuse = require 'fuse.js'
 
 module.exports = (robot) ->
 
+  send = (context, message, prependUsername=no) ->
+    robot.adapter.customMessage
+      channel: context.message.room
+      text: "#{if prependUsername then "<@#{context.message.user.id}> " else ""}#{message}"
+
   getNotifications = ->
     robot.brain.get('github-notifications') or []
 
@@ -122,7 +127,7 @@ module.exports = (robot) ->
   listOpenPullRequestsForRoom = (room, user) ->
     repo = repos[room]
     if not repo
-      robot.messageRoom room, "There is no github repository associated with this room. Contact your friendly <@#{robot.name}> administrator for assistance"
+      send message: room: room, "There is no github repository associated with this room. Contact your friendly <@#{robot.name}> administrator for assistance"
       return
 
     repo = octo.repos(githubOrg, repo)
@@ -149,8 +154,7 @@ module.exports = (robot) ->
         author = p[1]
         assignee = p[2]
         message+= """
-          *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
-          #{pr.htmlUrl}
+          *<#{pr.htmlUrl}|#{pr.title}>* +#{pr.additions} -#{pr.deletions}
           Updated: *#{moment(pr.updatedAt).fromNow()}*
           Status: #{if pr.mergeable then "Mergeable" else "Unresolved Conflicts"}
           Author: #{if author then "<@#{author.id}>" else "Unknown"}
@@ -160,13 +164,13 @@ module.exports = (robot) ->
       if message.length is 0
         message = "No matching pull requests found"
 
-      robot.messageRoom room, message
+      send message: room: room, message
     .catch ( error ) ->
       console.log error.stack
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
-    msg.send """
+    send msg, """
       Deleted #{notificationsCleared} notification#{if notificationsCleared is 1 then "" else "s"}.
       No more notifications for you.
     """
@@ -175,34 +179,34 @@ module.exports = (robot) ->
     [__, time] = msg.match
     notificationsCleared = clearSpecificNotificationForRoom(findRoom(msg), time)
     if notificationsCleared is 0
-      msg.send "Nice try. You don't even have a notification at #{time}"
+      send msg, "Nice try. You don't even have a notification at #{time}"
     else
-      msg.send "Deleted your #{time} notification"
+      send msg, "Deleted your #{time} notification"
 
   robot.respond /(?:github|gh|git) notification ((?:[01]?[0-9]|2[0-4]):[0-5]?[0-9])$/i, (msg) ->
     [__, time] = msg.match
     room = findRoom(msg)
     saveNotification room, time
-    msg.send "Ok, from now on I'll remind this room about open pull requests every weekday at #{time}"
+    send msg, "Ok, from now on I'll remind this room about open pull requests every weekday at #{time}"
 
   robot.respond /(?:github|gh|git) list notifications$/i, (msg) ->
     notifications = getNotificationsForRoom(findRoom(msg))
     if notifications.length is 0
-      msg.send "Well this is awkward. You haven't got any github notifications set :-/"
+      send msg, "Well this is awkward. You haven't got any github notifications set :-/"
     else
-      msg.send "You have pull request notifcations at the following times: #{_.map(notifications, (notification) -> notification.time)}"
+      send msg, "You have pull request notifcations at the following times: #{_.map(notifications, (notification) -> notification.time)}"
 
   robot.respond /(?:github|gh|git) notifications in every room/i, (msg) ->
     notifications = getNotifications()
     if notifications.length is 0
-      msg.send "No, because there aren't any."
+      send msg, "No, because there aren't any."
     else
-      msg.send """
+      send msg, """
         Here's the notifications for every room: #{_.map(notifications, (notification) -> "\nRoom: #{notification.room}, Time: #{notification.time}")}
       """
 
   robot.respond /(github|gh|git) help/i, (msg) ->
-    msg.send """
+    send msg, """
       I can remind you about open pull requests for the repo that belongs to this channel
       Use me to create a notification, and then I'll post in this room every weekday at the time you specify. Here's how:
 
