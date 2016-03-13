@@ -39,10 +39,13 @@ Fuse = require 'fuse.js'
 
 module.exports = (robot) ->
 
-  send = (context, message, prependUsername=no) ->
-    robot.adapter.customMessage
-      channel: context.message.room
-      text: "#{if prependUsername then "<@#{context.message.user.id}> " else ""}#{message}"
+  send = (context, message) ->
+    payload = channel: context.message.room
+    if _(message).isString()
+      payload.text = message
+    else
+      payload = _(payload).extend message
+    robot.adapter.customMessage payload
 
   getNotifications = ->
     robot.brain.get('github-notifications') or []
@@ -124,6 +127,38 @@ module.exports = (robot) ->
     saveNotifications notificationsToKeep
     notifications.length - (notificationsToKeep.length)
 
+  buildGithubAttachment = (pr, assignee) ->
+    color: "#ff9933"
+    author_name: pr.user.login
+    author_icon: pr.user.avatarUrl
+    author_link: pr.user.htmlUrl
+    title: pr.title
+    title_link: pr.htmlUrl
+    fields: [
+      title: "Updated"
+      value: moment(pr.updatedAt).fromNow()
+      short: yes
+    ,
+      title: "Status"
+      value: if pr.mergeable then "Mergeable" else "Unresolved Conflicts"
+      short: yes
+    ,
+      title: "Assignee"
+      value: if assignee then "<@#{assignee.id}>" else "Unassigned"
+      short: yes
+    ,
+      title: "Lines"
+      value: "+#{pr.additions} -#{pr.deletions}"
+      short: yes
+    ]
+    fallback: """
+      *#{pr.title}* +#{pr.additions} -#{pr.deletions}
+      Updated: *#{moment(pr.updatedAt).fromNow()}*
+      Status: #{if pr.mergeable then "Mergeable" else "Unresolved Conflicts"}
+      Author: #{pr.user.login}
+      Assignee: #{if assignee then "#{assignee.name}" else "Unassigned"}
+    """
+
   listOpenPullRequestsForRoom = (room, user) ->
     repo = repos[room]
     if not repo
@@ -144,26 +179,15 @@ module.exports = (robot) ->
     .then (prs) ->
       return Promise.all prs.map (pr) ->
         return if not pr
-        author = lookupUserWithGithub pr.user
         assignee = lookupUserWithGithub pr.assignee
-        return Promise.all [ pr, author, assignee ]
+        return Promise.all [ pr, assignee ]
     .then (prs) ->
-      message = ""
-      for p in prs when p
-        pr = p[0]
-        author = p[1]
-        assignee = p[2]
-        message+= """
-          *<#{pr.htmlUrl}|#{pr.title}>* +#{pr.additions} -#{pr.deletions}
-          Updated: *#{moment(pr.updatedAt).fromNow()}*
-          Status: #{if pr.mergeable then "Mergeable" else "Unresolved Conflicts"}
-          Author: #{if author then "<@#{author.id}>" else "Unknown"}
-          Assignee: #{if assignee then "<@#{assignee.id}>" else "Unassigned"}
-          \n
-        """
-      if message.length is 0
+      attachments = []
+      attachments.push buildGithubAttachment p[0], p[1] for p in prs when p
+      if attachments.length is 0
         message = "No matching pull requests found"
-
+      else
+        message = attachments: attachments
       send message: room: room, message
     .catch ( error ) ->
       console.log error.stack
