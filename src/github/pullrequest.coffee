@@ -1,8 +1,17 @@
 moment = require "moment"
+Octokat = require "octokat"
 
+Config = require "../config"
 Utils = require "../utils"
 
+octo = new Octokat token: Config.github.token
+
 class PullRequest
+  @fromUrl: (url) ->
+    octo.fromUrl(url).fetch()
+    .then (pr) ->
+      new PullRequest pr
+
   constructor: (json, @assignee) ->
     @[k] = v for k,v of json when k isnt "assignee"
 

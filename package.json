@@ -26,7 +26,7 @@
     "cron": "^1.0.9",
     "fuse.js": "^2.0.1",
     "moment": "^2.10.6",
-    "octokat": "^0.4.12",
+    "octokat": "^0.5.0-beta.0",
     "underscore": "^1.8.3"
   },
   "main": "index.coffee",
