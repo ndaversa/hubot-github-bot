@@ -26,6 +26,7 @@
 #   ndaversa
 
 _ = require 'underscore'
+Adapters = require "./adapters"
 Config = require "./config"
 Github = require "./github"
 Reminders = require "./reminders"
@@ -38,17 +39,34 @@ class GithubBot
     Utils.robot = @robot
     @reminders = new Reminders @robot, "github-reminders", (room) ->
       Github.PullRequests.openForRoom room
+    @webhook = new Github.Webhook @robot
+    switch @robot.adapterName
+      when "slack"
+        @adapter = new Adapters.Slack @robot
+      else
+        @adapter = new Adapters.Generic @robot
 
+    @registerWebhookListeners()
     @registerEventListeners()
     @registerRobotResponses()
 
   send: (context, message) ->
-    payload = channel: context.message.room
-    if _(message).isString()
-      payload.text = message
-    else
-      payload = _(payload).extend message
-    robot.adapter.customMessage payload
+    @adapter.send context, message
+
+  registerWebhookListeners: ->
+    disableDisclaimer = """
+      If you wish to stop receiving notifications for pull request assignments, reply with:
+      > github disable notifications
+    """
+
+    @robot.on "GithubPullRequestAssigned", (pr, sender) =>
+      @adapter.dm pr.assignee,
+        text: """
+          You have just been assigned to a pull request #{if sender then "by #{sender.name}" else ""}
+        """
+        author: sender
+        footer: disableDisclaimer
+        attachments: [ pr.toAttachment() ]
 
   registerEventListeners: ->
     @robot.on "GithubPullRequestsOpenForRoom", (prs, room) =>
@@ -60,6 +78,31 @@ class GithubBot
       @send message: room: room, message
 
   registerRobotResponses: ->
+
+    @robot.respond /(?:github|gh|git) (allow|start|enable|disallow|disable|stop)( notifications)?/i, (msg) =>
+      [ __, state ] = msg.match
+      switch state
+        when "allow", "start", "enable"
+          @adapter.enableNotificationsFor msg.message.user
+          @send msg, """
+          Github pull request notifications have been *enabled*
+
+          You will start receiving notifications when you are assigned to a pull request on Github
+
+          If you wish to _disable_ them just send me this message:
+          > github disable notifications
+          """
+        when "disallow", "stop", "disable"
+          @adapter.disableNotificationsFor msg.message.user
+          @send msg, """
+          Github pull request notifications have been *disabled*
+
+          You will no longer receive notifications when you are assigned to a pull request on Github
+
+          If you wish to _enable_ them again just send me this message:
+          > github enable notifications
+          """
+
     @robot.respond /(?:github|gh|git) delete all reminders/i, (msg) =>
       remindersCleared = @reminders.clearAllForRoom(Utils.findRoom(msg))
       @send msg, """
