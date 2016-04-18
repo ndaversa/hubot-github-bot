@@ -14,6 +14,8 @@ class Webhook
       if req.body.pull_request
         @onPullRequest event
 
+      res.send 'OK'
+
   onPullRequest: (event) ->
     return unless event.action is "assigned"
     return unless event.assignee?.url?
