@@ -60,6 +60,7 @@ class GithubBot
     """
 
     @robot.on "GithubPullRequestAssigned", (pr, sender) =>
+      @robot.logger.debug "Sending PR assignment notice to #{pr.assignee.name}, sender is #{sender?.name}"
       @adapter.dm pr.assignee,
         text: """
           You have just been assigned to a pull request #{if sender then "by #{sender.name}" else ""}

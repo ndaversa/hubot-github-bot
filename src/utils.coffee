@@ -14,7 +14,8 @@ class Utils
     return if not github
 
     github.fetch().then (user) ->
-      name = user.name or github.login
+      name = user.name or user.login
+      return unless name
       users = Utils.robot.brain.users()
       users = _(users).keys().map (id) ->
         u = users[id]

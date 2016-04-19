@@ -29,7 +29,7 @@ class Webhook
       .then (s) ->
         sender = s
       .catch (error) ->
-        Utils.robot.logger.error "Unable to find webhook sender #{sender.login}"
+        Utils.robot.logger.error "Unable to find webhook sender #{event.sender.login}"
       .then ->
         PullRequest.fromUrl event.pull_request.url
     .then (pr) ->
