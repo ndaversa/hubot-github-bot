@@ -13,7 +13,7 @@ class Utils
   @lookupUserWithGithub: (github) ->
     return if not github
 
-    github.fetch().then (user) ->
+    findMatch = (user) ->
       name = user.name or user.login
       return unless name
       users = Utils.robot.brain.users()
@@ -27,9 +27,15 @@ class Utils
         keys: ['real_name']
         shouldSort: yes
         verbose: no
+        threshold: 0.55
 
       results = f.search name
       result = if results? and results.length >=1 then results[0] else undefined
       return result
+
+    if github.fetch?
+      github.fetch().then findMatch
+    else
+      findMatch github
 
 module.exports = Utils

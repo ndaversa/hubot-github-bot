@@ -13,8 +13,8 @@ class PullRequests
 
     repo = octo.repos(Config.github.organization, repo)
     repo.pulls.fetch(state: "open")
-    .then (prs) ->
-      return Promise.all prs.map (pr) ->
+    .then (json) ->
+      return Promise.all json.items.map (pr) ->
         if user?
           return if not pr.assignee?
           return Utils.lookupUserWithGithub(pr.assignee).then (assignee) ->
