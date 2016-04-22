@@ -1,5 +1,7 @@
 # Description:
-#  List and schedule reminders about open pull requests on github
+# A hubot script to list and recurrently remind you about open pull requests.
+# Optionally receive direct messages when you are assigned to a pull
+# request in your organization or for a specific repo or set of repos.
 #
 # Dependencies:
 #  - coffeescript
@@ -11,6 +13,7 @@
 #
 # Configuration:
 #   HUBOT_GITHUB_TOKEN - Github Application Token
+#   HUBOT_GITHUB_WEBHOOK_SECRET - Optional, if you are using webhooks and have a secret set this for additional security checks on payload delivery
 #   HUBOT_GITHUB_URL - Set this value if you are using Github Enterprise   default: `https://api.github.com`
 #   HUBOT_GITHUB_ORG - Github Organization Name (the one in the url)
 #   HUBOT_GITHUB_REPOS_MAP (format: "{\"web\":\"frontend\",\"android\":\"android\",\"ios\":\"ios\",\"platform\":\"web\"}"
