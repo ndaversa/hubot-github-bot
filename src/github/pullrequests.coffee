@@ -3,7 +3,9 @@ Config = require "../config"
 PullRequest = require "./pullrequest"
 Utils = require "../utils"
 
-octo = new Octokat token: Config.github.token
+octo = new Octokat
+  token: Config.github.token
+  rootUrl: Config.github.url
 
 class PullRequests
 

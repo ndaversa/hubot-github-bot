@@ -3,7 +3,9 @@ Octokat = require "octokat"
 Utils = require "../utils"
 PullRequest = require "./pullrequest"
 
-octo = new Octokat token: Config.github.token
+octo = new Octokat
+  token: Config.github.token
+  rootUrl: Config.github.url
 
 class Webhook
   constructor: (@robot) ->

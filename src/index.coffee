@@ -11,6 +11,7 @@
 #
 # Configuration:
 #   HUBOT_GITHUB_TOKEN - Github Application Token
+#   HUBOT_GITHUB_URL - Set this value if you are using Github Enterprise   default: `https://api.github.com`
 #   HUBOT_GITHUB_ORG - Github Organization Name (the one in the url)
 #   HUBOT_GITHUB_REPOS_MAP (format: "{\"web\":\"frontend\",\"android\":\"android\",\"ios\":\"ios\",\"platform\":\"web\"}"
 #
