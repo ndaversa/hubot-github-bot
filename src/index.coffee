@@ -170,4 +170,13 @@ class GithubBot
 
       Github.PullRequests.openForRoom(msg.message.room, who)
 
+    @robot.hear /(?:https?:\/\/github\.com\/([a-z0-9-]+)\/)([a-z0-9-_.]+)\/pull\/(\d+)\/?\s*/i, (msg) =>
+      [ url, org, repo, number ] = msg.match
+      Github.PullRequest.fromUrl("#{Config.github.url}/repos/#{org}/#{repo}/pulls/#{number}")
+      .then (pr) =>
+        @robot.emit "JiraFindTicketMatches", "#{pr.title} #{pr.body}", (matches) =>
+          if matches
+            msg.match = _(matches).unique()
+            @robot.emit "JiraPrepareResponseForTickets", msg
+
 module.exports = GithubBot
