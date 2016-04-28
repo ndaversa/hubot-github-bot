@@ -16,7 +16,7 @@
 #   HUBOT_GITHUB_WEBHOOK_SECRET - Optional, if you are using webhooks and have a secret set this for additional security checks on payload delivery
 #   HUBOT_GITHUB_URL - Set this value if you are using Github Enterprise   default: `https://api.github.com`
 #   HUBOT_GITHUB_ORG - Github Organization Name (the one in the url)
-#   HUBOT_GITHUB_REPOS_MAP (format: "{\"web\":\"frontend\",\"android\":\"android\",\"ios\":\"ios\",\"platform\":\"web\"}"
+#   HUBOT_GITHUB_REPOS_MAP (format: "{"web":["frontend","web"],"android":["android"],"ios":["ios"],"platform":["web"]}"
 #
 # Commands:
 #   hubot github open [for <user>] - Shows a list of open pull requests for the repo of this room [optionally for a specific user]
