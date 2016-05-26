@@ -11,7 +11,7 @@ class Utils
     room
 
   @lookupUserWithGithub: (github) ->
-    return if not github
+    return Promise.resolve() unless github
 
     findMatch = (user) ->
       name = user.name or user.login
@@ -31,7 +31,7 @@ class Utils
 
       results = f.search name
       result = if results? and results.length >=1 then results[0] else undefined
-      return result
+      return Promise.resolve result
 
     if github.fetch?
       github.fetch().then findMatch

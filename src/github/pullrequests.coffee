@@ -22,7 +22,8 @@ class PullRequests
         return Promise.all json.items.map (pr) ->
           if user?
             return if not pr.assignee?
-            return Utils.lookupUserWithGithub(pr.assignee).then (assignee) ->
+            github = octo.fromUrl(pr.assignee.url)
+            return Utils.lookupUserWithGithub(octo.fromUrl(github)).then (assignee) ->
               return if user.toLowerCase() isnt assignee?.name.toLowerCase()
               return repo.pulls(pr.number).fetch()
           else
@@ -30,7 +31,8 @@ class PullRequests
       .then (prs) ->
         return Promise.all prs.map (pr) ->
           return if not pr
-          assignee = Utils.lookupUserWithGithub pr.assignee
+          github = octo.fromUrl(pr.assignee.url) if pr.assignee?.url
+          assignee = Utils.lookupUserWithGithub github
           return Promise.all [ pr, assignee ]
     )
     .then (repos) ->
