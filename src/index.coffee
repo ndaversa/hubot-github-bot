@@ -41,7 +41,8 @@ class GithubBot
   constructor: (@robot) ->
     return new GithubBot @robot unless @ instanceof GithubBot
     Utils.robot = @robot
-    @reminders = new Reminders @robot, "github-reminders", (room) ->
+    @reminders = new Reminders @robot, "github-reminders", (name) ->
+      room = Utils.getRoom message: room: name
       Github.PullRequests.openForRoom room
     @webhook = new Github.Webhook @robot
     switch @robot.adapterName
@@ -76,11 +77,11 @@ class GithubBot
   registerEventListeners: ->
     @robot.on "GithubPullRequestsOpenForRoom", (prs, room) =>
       if prs.length is 0
-        message = "No matching pull requests found"
+        message = text: "No matching pull requests found"
       else
         attachments = (pr.toAttachment() for pr in prs)
         message = attachments: attachments
-      @send message: room: room, message
+      @send message: room: room.id, message
 
   registerRobotResponses: ->
 
@@ -109,7 +110,8 @@ class GithubBot
           """
 
     @robot.respond /(?:github|gh|git) delete all reminders/i, (msg) =>
-      remindersCleared = @reminders.clearAllForRoom(Utils.findRoom(msg))
+      room = Utils.getRoom msg
+      remindersCleared = @reminders.clearAllForRoom room.name
       @send msg, """
         Deleted #{remindersCleared} reminder#{if remindersCleared is 1 then "" else "s"}.
         No more reminders for you.
@@ -117,7 +119,8 @@ class GithubBot
 
     @robot.respond /(?:github|gh|git) delete ([0-5]?[0-9]:[0-5]?[0-9]) reminder/i, (msg) =>
       [__, time] = msg.match
-      remindersCleared = @reminders.clearForRoomAtTime(Utils.findRoom(msg), time)
+      room = Utils.getRoom msg
+      remindersCleared = @reminders.clearForRoomAtTime room.name, time
       if remindersCleared is 0
         @send msg, "Nice try. You don't even have a reminder at #{time}"
       else
@@ -125,12 +128,13 @@ class GithubBot
 
     @robot.respond /(?:github|gh|git) remind(?:er)? ((?:[01]?[0-9]|2[0-4]):[0-5]?[0-9])$/i, (msg) =>
       [__, time] = msg.match
-      room = Utils.findRoom(msg)
-      @reminders.save room, time
+      room = Utils.getRoom msg
+      @reminders.save room.name, time
       @send msg, "Ok, from now on I'll remind this room about open pull requests every weekday at #{time}"
 
     @robot.respond /(?:github|gh|git) list reminders$/i, (msg) =>
-      reminders = @reminders.getForRoom(Utils.findRoom(msg))
+      room = Utils.getRoom msg
+      reminders = @reminders.getForRoom room.name
       if reminders.length is 0
         @send msg, "Well this is awkward. You haven't got any github reminders set :-/"
       else
@@ -168,7 +172,9 @@ class GithubBot
         who = @robot.brain.userForName who
         who = who.name
 
-      Github.PullRequests.openForRoom(msg.message.room, who)
+      room = Utils.getRoom msg
+      Github.PullRequests.openForRoom(room, who)
+      .catch (e) => @send msg, e
 
     @robot.hear /(?:https?:\/\/github\.com\/([a-z0-9-]+)\/)([a-z0-9-_.]+)\/pull\/(\d+)\/?\s*/i, (msg) =>
       [ url, org, repo, number ] = msg.match

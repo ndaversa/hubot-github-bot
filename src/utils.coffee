@@ -10,13 +10,21 @@ class Utils
       room = msg.envelope.user.reply_to
     room
 
+  @getRoom: (context) ->
+    room = @robot.adapter.client.rtm.dataStore.getChannelOrGroupByName context.message.room
+    room = @robot.adapter.client.rtm.dataStore.getChannelGroupOrDMById context.message.room unless room
+    room
+
+  @getUsers: ->
+    Utils.robot.brain.users() or Utils.robot.adapter.client.rtm.dataStore.users
+
   @lookupUserWithGithub: (github) ->
     return Promise.resolve() unless github
 
     findMatch = (user) ->
       name = user.name or user.login
       return unless name
-      users = Utils.robot.brain.users()
+      users = Utils.getUsers()
       users = _(users).keys().map (id) ->
         u = users[id]
         id: u.id

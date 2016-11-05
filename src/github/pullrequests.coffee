@@ -12,8 +12,8 @@ octo = new Octokat
 class PullRequests
 
   @openForRoom: (room, user) ->
-    repos = Config.maps.repos[room]
-    throw "There is no github repository associated with this room. Contact your friendly <@#{robot.name}> administrator for assistance" unless repos
+    repos = Config.maps.repos[room.name]
+    return Promise.reject "There is no github repository associated with this room. Contact your friendly <@#{robot.name}> administrator for assistance" unless repos
 
     Promise.all( repos.map (repo) ->
       repo = octo.repos(Config.github.organization, repo)
@@ -23,7 +23,7 @@ class PullRequests
           if user?
             return if not pr.assignee?
             github = octo.fromUrl(pr.assignee.url)
-            return Utils.lookupUserWithGithub(octo.fromUrl(github)).then (assignee) ->
+            return Utils.lookupUserWithGithub(github).then (assignee) ->
               return if user.toLowerCase() isnt assignee?.name.toLowerCase()
               return repo.pulls(pr.number).fetch()
           else
@@ -43,7 +43,7 @@ class PullRequests
       Utils.robot.emit "GithubPullRequestsOpenForRoom", pullRequests, room
       pullRequests
     .catch ( error ) ->
-      Utils.robot.logger.error error.stack
+      Utils.robot.logger.error error
       Promise.reject error
 
 module.exports = PullRequests
