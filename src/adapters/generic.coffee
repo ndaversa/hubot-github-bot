@@ -66,7 +66,7 @@ class GenericAdapter
           @robot.logger.debug "Github Notification surpressed for #{user.name} because it would be a self-notification"
           continue
         message.text += "\n#{message.footer}" if message.text and message.footer and @getDMCountFor(user) < 3
-        @send message: room: user.id, message
+        @send message: room: user.id, _(message).pick "attachments", "text"
         @incrementDMCountFor user
 
   getPermalink: (msg) -> ""
