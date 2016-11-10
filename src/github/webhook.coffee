@@ -5,7 +5,6 @@ PullRequest = require "./pullrequest"
 
 url = require "url"
 crypto = require "crypto"
-hmac = crypto.createHmac "sha1", Config.github.webhook.secret if Config.github.webhook.secret
 
 octo = new Octokat
   token: Config.github.token
@@ -15,6 +14,7 @@ class Webhook
   constructor: (@robot) ->
     @robot.router.post "/hubot/github-events", (req, res) =>
       return unless req.body?
+      hmac = crypto.createHmac "sha1", Config.github.webhook.secret if Config.github.webhook.secret
       if hmac and hubSignature = req.headers["x-hub-signature"]
         hmac.update JSON.stringify req.body
         signature = "sha1=#{hmac.digest "hex"}"

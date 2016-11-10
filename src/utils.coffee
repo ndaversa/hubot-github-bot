@@ -16,7 +16,7 @@ class Utils
     room
 
   @getUsers: ->
-    Utils.robot.brain.users() or Utils.robot.adapter.client.rtm.dataStore.users
+    Utils.robot.adapter?.client?.rtm?.dataStore?.users or Utils.robot.brain.users()
 
   @lookupUserWithGithub: (github) ->
     return Promise.resolve() unless github
