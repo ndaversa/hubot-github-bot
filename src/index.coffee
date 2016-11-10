@@ -39,7 +39,6 @@ Utils = require "./utils"
 class GithubBot
 
   constructor: (@robot) ->
-    console.log @robot.brain.users
     return new GithubBot @robot unless @ instanceof GithubBot
     Utils.robot = @robot
     @reminders = new Reminders @robot, "github-reminders", (name) ->
