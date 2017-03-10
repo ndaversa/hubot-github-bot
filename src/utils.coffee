@@ -13,6 +13,8 @@ class Utils
   @getRoom: (context) ->
     room = @robot.adapter.client.rtm.dataStore.getChannelOrGroupByName context.message.room
     room = @robot.adapter.client.rtm.dataStore.getChannelGroupOrDMById context.message.room unless room
+    room = @robot.adapter.client.rtm.dataStore.getDMByUserId context.message.room unless room
+    room = @robot.adapter.client.rtm.dataStore.getDMByName context.message.room unless room
     room
 
   @getUsers: ->
