@@ -60,7 +60,7 @@ class GithubBot
 
   registerWebhookListeners: ->
     disableDisclaimer = """
-      If you wish to stop receiving notifications for pull request assignments, reply with:
+      If you wish to stop receiving notifications about github reply with:
       > github disable notifications
     """
 
@@ -69,6 +69,16 @@ class GithubBot
       @adapter.dm pr.assignee,
         text: """
           You have just been assigned to a pull request #{if sender then "by #{sender.name}" else ""}
+        """
+        author: sender
+        footer: disableDisclaimer
+        attachments: [ pr.toAttachment() ]
+
+    @robot.on "GithubPullRequestReviewRequested", (pr, sender) =>
+      @robot.logger.debug "Sending PR review request to #{pr.requested_reviewer.name}, sender is #{sender?.name}"
+      @adapter.dm pr.requested_reviewer,
+        text: """
+          You have just been requested to review a pull request #{if sender then "by #{sender.name}" else ""}
         """
         author: sender
         footer: disableDisclaimer
