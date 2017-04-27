@@ -29,7 +29,13 @@ class Webhook
       res.send 'OK'
 
   onPullRequest: (event) ->
-    return unless event.action is "assigned"
+    switch event.action
+      when "assigned"
+        @onPullRequestAssignment event
+      when "review_requested"
+        @onPullRequestReviewRequested event
+
+  onPullRequestAssignment: (event) ->
     return unless event.assignee?.url?
 
     user = null
@@ -52,5 +58,27 @@ class Webhook
       Utils.robot.logger.error error
       Utils.robot.logger.error error.stack
 
+  onPullRequestReviewRequested: (event) -> 
+    return unless event.requested_reviewer?.url?
+
+    user = null
+    sender = null
+    Utils.lookupUserWithGithub(octo.fromUrl(event.requested_reviewer.url))
+    .then (u) ->
+      user = u
+      Utils.lookupUserWithGithub(octo.fromUrl(event.sender.url))
+      .then (s) ->
+        sender = s
+      .catch (error) ->
+        Utils.robot.logger.error "Github Webhook: Unable to find webhook sender #{event.sender.login}"
+      .then ->
+        PullRequest.fromUrl event.pull_request.url
+    .then (pr) ->
+      pr.requested_reviewer = user
+      @robot.emit "GithubPullRequestReviewRequested", pr, sender
+    .catch (error) ->
+      Utils.robot.logger.error "Github Webhook: Unable to find user to send notification to #{event.requested_reviewer.login}"
+      Utils.robot.logger.error error
+      Utils.robot.logger.error error.stack
 
 module.exports = Webhook
