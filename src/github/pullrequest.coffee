@@ -23,6 +23,10 @@ class PullRequest
     title: @title
     title_link: @htmlUrl
     fields: [
+      title: "Created"
+      value: moment(@createdAt).fromNow()
+      short: yes
+    ,
       title: "Updated"
       value: moment(@updatedAt).fromNow()
       short: yes
@@ -41,6 +45,7 @@ class PullRequest
     ]
     fallback: """
       *#{@title}* +#{@additions} -#{@deletions}
+      Created: *#{moment(@createdAt).fromNow()}*
       Updated: *#{moment(@updatedAt).fromNow()}*
       Status: #{if @mergeable then "Mergeable" else "Unresolved Conflicts"}
       Author: #{@user.login}
