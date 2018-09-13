@@ -84,6 +84,16 @@ class GithubBot
         footer: disableDisclaimer
         attachments: [ pr.toAttachment() ]
 
+    @robot.on "GithubPullRequestReviewed", (pr, sender) =>
+      @robot.logger.debug "Sending PR reviewed notice to #{pr.user.login}, sender is #{sender?.name}"
+      @adapter.dm pr.requested_reviewer,
+        text: """
+          Your pull request has been reviewed by #{if sender then "by #{sender.name}" else ""}
+        """
+        author: sender
+        footer: disableDisclaimer
+        attachments: [ pr.toAttachment() ]
+
   registerEventListeners: ->
     @robot.on "GithubPullRequestsOpenForRoom", (prs, room) =>
       if prs.length is 0

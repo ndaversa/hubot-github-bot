@@ -23,7 +23,9 @@ class Webhook
 
       event = req.body
 
-      if req.body.pull_request
+      if req.headers["x-github-event"] is "pull_request_review"
+        @onPullRequestReviewAction event
+      else if req.body.pull_request
         @onPullRequest event
 
       res.send 'OK'
@@ -34,6 +36,30 @@ class Webhook
         @onPullRequestAssignment event
       when "review_requested"
         @onPullRequestReviewRequested event
+
+  onPullRequestReviewAction: (event) ->
+    return unless event.action is "edited" or event.action is "submitted"
+    return unless event.pull_request?.user?.url?
+
+    user = null
+    sender = null
+    Utils.lookupUserWithGithub(octo.fromUrl(event.pull_request.user.url))
+    .then (u) ->
+      user = u
+      Utils.lookupUserWithGithub(octo.fromUrl(event.sender.url))
+      .then (s) ->
+        sender = s
+      .catch (error) ->
+        Utils.robot.logger.error "Github Webhook: Unable to find webhook sender #{event.sender.login}"
+      .then ->
+        PullRequest.fromUrl event.pull_request.url
+    .then (pr) ->
+      pr.creator = user
+      @robot.emit "GithubPullRequestReviewed", pr, sender
+    .catch (error) ->
+      Utils.robot.logger.error "Github Webhook: Unable to find user to send notification to #{event.pull_request.user.login}"
+      Utils.robot.logger.error error
+      Utils.robot.logger.error error.stack
 
   onPullRequestAssignment: (event) ->
     return unless event.assignee?.url?
