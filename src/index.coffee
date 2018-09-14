@@ -86,7 +86,7 @@ class GithubBot
 
     @robot.on "GithubPullRequestReviewed", (pr, sender) =>
       @robot.logger.debug "Sending PR reviewed notice to #{pr.user.login}, sender is #{sender?.name}"
-      @adapter.dm pr.requested_reviewer,
+      @adapter.dm pr.creator,
         text: """
           Your pull request has been reviewed by #{if sender then "by #{sender.name}" else ""}
         """
